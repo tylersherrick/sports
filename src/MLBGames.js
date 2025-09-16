@@ -11,7 +11,7 @@ function MLBGames() {
   const [scoreChanges, setScoreChanges] = useState({});
 
   useEffect(() => {
-    if ("Notification" in window) {
+    if ("Notification" in window && navigator.standalone) {
       Notification.requestPermission();
     }
   }, []);
