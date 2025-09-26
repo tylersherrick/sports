@@ -1,14 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
 function MLBGames() {
   const [games, setGames] = useState([]);
-  const [prevGames, setPrevGames] = useState([]);
+  const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedGame, setSelectedGame] = useState(null);
   const [showAllGames, setShowAllGames] = useState(false);
   const [scoreChanges, setScoreChanges] = useState({});
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+
+  // Update isMobile on resize
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 480);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const changeDay = (days) => {
+    const newDate = new Date(date);
+    newDate.setDate(newDate.getDate() + days);
+    setDate(newDate.toISOString().split("T")[0]);
+  };
 
   useEffect(() => {
     if ("Notification" in window && navigator.standalone) {
@@ -17,10 +32,15 @@ function MLBGames() {
   }, []);
 
   useEffect(() => {
-    const fetchGames = async () => {
+    let interval = null;
+
+    const fetchGames = async (isInitialLoad = false) => {
+      // Only show loading for initial load or date changes
+      if (isInitialLoad) setLoading(true);
       try {
+        const formattedDate = date.replaceAll("-", "");
         const response = await fetch(
-          "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard"
+          `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${formattedDate}`
         );
         if (!response.ok) throw new Error("Network response was not ok");
         const data = await response.json();
@@ -29,116 +49,120 @@ function MLBGames() {
           const competitors = event.competitions[0].competitors;
           const awayTeam = competitors[1].team;
           const homeTeam = competitors[0].team;
+
           const awayScore = competitors[1].score || 0;
           const homeScore = competitors[0].score || 0;
+
           const eventTime = event.date ? new Date(event.date) : null;
           const localTime = eventTime
-            ? eventTime.toLocaleTimeString(undefined, {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })
+            ? eventTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: true })
             : "TBD";
+
           const state = event.status.type.state;
           const gameId = event.id;
+
+          const awayAbbr = awayTeam.abbreviation || awayTeam.displayName.slice(0, 3);
+          const homeAbbr = homeTeam.abbreviation || homeTeam.displayName.slice(0, 3);
 
           return {
             gameId,
             awayName: awayTeam.displayName,
             homeName: homeTeam.displayName,
+            awayAbbr,
+            homeAbbr,
             awayScore,
             homeScore,
             time: localTime,
             awayLogo: awayTeam.logo,
             homeLogo: homeTeam.logo,
-            state,
+            state
           };
         });
 
         const changes = {};
-        matchups.forEach((game) => {
-          const prev = prevGames.find((g) => g.gameId === game.gameId);
+        const updatedGames = matchups.map((game) => {
+          const prev = prevGamesRef.current.find((g) => g.gameId === game.gameId);
 
           if (prev && (prev.awayScore !== game.awayScore || prev.homeScore !== game.homeScore)) {
             changes[game.gameId] = true;
             if (Notification.permission === "granted") {
               new Notification(`${game.awayName} @ ${game.homeName}`, {
-                body: `Score updated: ${game.awayScore} - ${game.homeScore}`,
+                body: `Score updated: ${game.awayScore} - ${game.homeScore}`
               });
             }
-            setTimeout(() => {
-              setScoreChanges((prev) => ({ ...prev, [game.gameId]: false }));
-            }, 1000);
+            setTimeout(() => setScoreChanges((prev) => ({ ...prev, [game.gameId]: false })), 1000);
+            return { ...prev, ...game };
           }
 
           if (!prev && game.state === "in" && Notification.permission === "granted") {
-            new Notification(`${game.awayName} @ ${game.homeName}`, {
-              body: `Game just started!`,
-            });
+            new Notification(`${game.awayName} @ ${game.homeName}`, { body: "Game just started!" });
           }
+
+          return prev || game;
         });
 
+        prevGamesRef.current = updatedGames;
         setScoreChanges((prev) => ({ ...prev, ...changes }));
-        setPrevGames(games);
-        setGames(matchups);
-        setLoading(false);
+        setGames(updatedGames);
         setError(null);
       } catch (err) {
         setError("Failed to fetch games");
-        setLoading(false);
+      } finally {
+        if (isInitialLoad) setLoading(false);
       }
     };
 
-    fetchGames();
-    const interval = setInterval(fetchGames, 2500);
-    return () => clearInterval(interval);
-  }, [games, prevGames]);
+    fetchGames(true); // initial load
 
-  const gamesToShow = showAllGames ? games : games.slice(0, 3);
+    // Auto-refresh only for today
+    const today = new Date().toISOString().split("T")[0];
+    if (date === today) {
+      interval = setInterval(() => fetchGames(false), 2500); // live updates do not trigger loading
+    }
+
+    return () => { if (interval) clearInterval(interval); };
+  }, [date]);
+
+  const gamesToShow = (date !== new Date().toISOString().split("T")[0] || showAllGames)
+    ? games
+    : games.slice(0, 3);
 
   return (
     <div className="mlb-games">
-      <h1
-        style={{ cursor: selectedGame ? "default" : "pointer" }}
-        onClick={() => { if (!selectedGame) setShowAllGames(!showAllGames); }}
-      >
-        MLB
+      <h1 className={!selectedGame ? "clickable" : "disabled"} onClick={() => { if (!selectedGame) setShowAllGames(!showAllGames); }}>
+        MLB Scores
       </h1>
+
+      <div className="controls">
+        <button onClick={() => changeDay(-1)}>Previous</button>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button onClick={() => changeDay(1)}>Next</button>
+      </div>
+
       {selectedGame && (
         <div className="game-details">
           <h2>{selectedGame.awayName} @ {selectedGame.homeName}</h2>
-          {selectedGame.state === "in" && (
+          {(selectedGame.state === "in" || selectedGame.state === "post") && (
             <p>Score: {selectedGame.awayScore} - {selectedGame.homeScore}</p>
           )}
-          <p>Time: {selectedGame.time}</p>
+          {(selectedGame.state === "in" || selectedGame.state === "pre") && <p>Time: {selectedGame.time}</p>}
           <button onClick={() => setSelectedGame(null)}>Back</button>
         </div>
       )}
+
       {!selectedGame && loading && <p>Loading games...</p>}
-      {!selectedGame && error && <p style={{ color: "red" }}>{error}</p>}
+      {!selectedGame && error && <p className="error">{error}</p>}
       {!selectedGame && !loading && !error && gamesToShow.length === 0 && <p>No games available.</p>}
       {!selectedGame && !loading && !error && gamesToShow.length > 0 && (
         <ul>
           {gamesToShow.map((game) => (
-            <li
-              key={game.gameId}
-              className={
-                scoreChanges[game.gameId]
-                  ? "score-changed"
-                  : showAllGames
-                    ? game.state === "in"
-                      ? "live-game"
-                      : ""
-                    : "preview-game"
-              }
-              onClick={() => setSelectedGame(game)}
-            >
-              <img src={game.awayLogo} alt={game.awayName} style={{ width: "40px", height: "40px" }} />
-              <span>{game.awayName} {game.state === "in" ? game.awayScore : ""}</span>
-              <span>-</span>
-              <span>{game.state === "in" ? game.homeScore : ""} {game.homeName}</span>
-              <img src={game.homeLogo} alt={game.homeName} style={{ width: "40px", height: "40px" }} />
-              <span>({game.time})</span>
+            <li key={game.gameId} className={scoreChanges[game.gameId] ? "score-changed" : ""} onClick={() => setSelectedGame(game)}>
+              <img src={game.awayLogo} alt={game.awayName} />
+              <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
+              <span className="game-score">{(game.state === "in" || game.state === "post") ? `${game.awayScore} - ${game.homeScore}` : ""}</span>
+              <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>
+              <img src={game.homeLogo} alt={game.homeName} />
+              {(game.state === "in" || game.state === "pre") && <span>({game.time})</span>}
               {game.state === "in" && <span className="live-dot"></span>}
             </li>
           ))}

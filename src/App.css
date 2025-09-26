@@ -1,4 +1,126 @@
-body {
+.mlb-games {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1em;
+  font-family: sans-serif;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  margin-bottom: 1em;
+  flex-wrap: wrap;
+}
+
+.controls button {
+  padding: 0.5em 0.8em;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+.controls input[type="date"] {
+  padding: 0.4em;
+  font-size: 1em;
+}
+
+.mlb-games ul {
+  list-style: none;
+  padding: 0;
   margin: 0;
+}
+
+.mlb-games li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6em 0;
+  border-bottom: 1px solid #ccc;
+  gap: 0.5em;
+  flex-wrap: nowrap;
+}
+
+.mlb-games li img {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.team-name {
+  flex: 1 1 auto;
+  min-width: 60px;
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-score {
+  flex: 0 0 50px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.live-dot {
+  width: 10px;
+  height: 10px;
+  background: red;
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 0.5em;
+}
+
+.game-details {
+  padding: 1em 0;
+  border: 1px solid #ccc;
+  margin-bottom: 1em;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.disabled {
+  cursor: default;
+}
+
+.error {
+  color: red;
+}
+
+/* Mobile: abbreviate names, scale logos and spacing */
+@media (max-width: 480px) {
+  .controls button,
+  .controls input[type="date"] {
+    font-size: 0.9em;
+    padding: 0.4em 0.6em;
+  }
+
+  .mlb-games li {
+    padding: 0.4em 0;
+    gap: 0.4em;
+  }
+
+  .mlb-games li img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .game-score {
+    flex: 0 0 40px;
+    font-size: 0.9em;
+  }
+
+  .team-name {
+    min-width: 50px;
+    font-size: 0.9em;
+  }
+
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    margin-left: 0;
+  }
 }
