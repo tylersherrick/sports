@@ -122,14 +122,20 @@ function MLBGames() {
   }, [date]);
 
   // Order: in-progress, scheduled, final
-  const orderedGames = [...games].sort((a, b) => {
-    const order = { "in": 0, "pre": 1, "post": 2 };
-    return (order[a.state] || 3) - (order[b.state] || 3);
-  });
+ // Order: in-progress, scheduled, final
+const orderedGames = [...games].sort((a, b) => {
+  const order = { in: 0, pre: 1, post: 2 };
+  const stateA = a.state || "unknown";
+  const stateB = b.state || "unknown";
+  return (order[stateA] ?? 3) - (order[stateB] ?? 3);
+});
 
-  const gamesToShow = (date !== new Date().toISOString().split("T")[0] || showAllGames)
+// Determine which games to show
+const gamesToShow =
+  date !== new Date().toISOString().split("T")[0] || showAllGames
     ? orderedGames
-    : orderedGames.slice(0, 3);
+    : orderedGames.slice(0, 3); // Always slice **after sorting**
+
 
   return (
     <div className="mlb-games">
