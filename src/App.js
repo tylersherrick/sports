@@ -1,10 +1,17 @@
-import './App.css';
-import MLBGames from './MLBGames';
+import { useState } from "react";
+import MLBGames from "./MLBGames";
+import NHLGames from "./NHLGames";
 
-function App() {
+function Sports() {
+  const [isExpanded, setExpanded] = useState(null); // 'MLB' or 'NHL'
+
   return (
-    <MLBGames />
+    <div className="sports-container">
+      {!isExpanded && <p className="default-text">Today's Sporting Events</p>}
+      <MLBGames isExpanded={isExpanded} setExpanded={setExpanded} />
+      <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} />
+    </div>
   );
 }
 
-export default App;
+export default Sports;

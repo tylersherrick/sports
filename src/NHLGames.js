@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-function MLBGames({ isExpanded, setExpanded }) {
+function NHLGames({ isExpanded, setExpanded }) {
   const [games, setGames] = useState([]);
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
@@ -10,13 +10,12 @@ function MLBGames({ isExpanded, setExpanded }) {
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
+  // Handle mobile resizing
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 480);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  const todayString = () => new Date().toISOString().split("T")[0];
 
   const changeDay = (days) => {
     const newDate = new Date(date);
@@ -24,23 +23,15 @@ function MLBGames({ isExpanded, setExpanded }) {
     setDate(newDate.toISOString().split("T")[0]);
   };
 
-  // Reset date when collapsing
-  const toggleExpand = () => {
-    if (isExpanded === "MLB") {
-      setExpanded(null);
-      setDate(todayString());
-    } else {
-      setExpanded("MLB");
-    }
-  };
-
   useEffect(() => {
-    const fetchGames = async () => {
-      setLoading(true);
+    let interval = null;
+
+    const fetchGames = async (showLoading = true) => {
+      if (showLoading) setLoading(true);
       try {
         const formattedDate = date.replaceAll("-", "");
         const res = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?dates=${formattedDate}`
+          `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${formattedDate}`
         );
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
@@ -49,8 +40,6 @@ function MLBGames({ isExpanded, setExpanded }) {
           const competitors = event.competitions[0].competitors;
           const awayTeam = competitors[1].team;
           const homeTeam = competitors[0].team;
-          const awayScore = competitors[1].score || 0;
-          const homeScore = competitors[0].score || 0;
 
           const eventTime = event.date ? new Date(event.date) : null;
           const localTime = eventTime
@@ -69,8 +58,8 @@ function MLBGames({ isExpanded, setExpanded }) {
             homeName: homeTeam.displayName,
             awayAbbr,
             homeAbbr,
-            awayScore,
-            homeScore,
+            awayScore: competitors[1].score || 0,
+            homeScore: competitors[0].score || 0,
             time: localTime,
             awayLogo: awayTeam.logo,
             homeLogo: homeTeam.logo,
@@ -78,15 +67,15 @@ function MLBGames({ isExpanded, setExpanded }) {
           };
         }) || [];
 
+        // Highlight score changes
         const changes = {};
         const updatedGames = matchups.map((game) => {
           const prev = prevGamesRef.current.find((g) => g.gameId === game.gameId);
           if (prev && (prev.awayScore !== game.awayScore || prev.homeScore !== game.homeScore)) {
             changes[game.gameId] = true;
             setTimeout(() => setScoreChanges((prev) => ({ ...prev, [game.gameId]: false })), 1000);
-            return { ...prev, ...game };
           }
-          return prev || game;
+          return game;
         });
 
         prevGamesRef.current = updatedGames;
@@ -96,13 +85,17 @@ function MLBGames({ isExpanded, setExpanded }) {
       } catch {
         setError("Failed to fetch games");
       } finally {
-        setLoading(false);
+        if (showLoading) setLoading(false);
       }
     };
 
-    fetchGames();
-    const interval = setInterval(fetchGames, 2500);
-    return () => clearInterval(interval);
+    fetchGames(true);
+
+    // Auto-refresh only for current date
+    const today = new Date().toISOString().split("T")[0];
+    if (date === today) interval = setInterval(() => fetchGames(false), 2500);
+
+    return () => { if (interval) clearInterval(interval); };
   }, [date]);
 
   const orderedGames = [...games].sort((a, b) => {
@@ -112,48 +105,66 @@ function MLBGames({ isExpanded, setExpanded }) {
     return (order[stateA] ?? 3) - (order[stateB] ?? 3);
   });
 
-  const gamesToShow = isExpanded === "MLB" ? orderedGames : orderedGames.slice(0, 3);
+  // Show all games if expanded, else preview first 3
+  const gamesToShow = isExpanded === "NHL" ? orderedGames : orderedGames.slice(0, 3);
 
-  if (isExpanded && isExpanded !== "MLB") return null;
+  // Hide NHL if another league is expanded
+  if (isExpanded && isExpanded !== "NHL") return null;
 
   return (
-    <div className="sports-games mlb-games">
-      <h1 className="clickable" onClick={toggleExpand}>
-        MLB
-      </h1>
+  <div className="sports-games nhl-games">
+    <h1
+      className="clickable"
+      onClick={() => {
+        if (isExpanded === "NHL") {
+          setExpanded(null);
+          setDate(new Date().toISOString().split("T")[0]); // reset date
+        } else {
+          setExpanded("NHL");
+        }
+      }}
+    >
+      NHL
+    </h1>
 
-      {isExpanded === "MLB" && (
-        <div className="controls">
-          <button onClick={() => changeDay(-1)}>Previous</button>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <button onClick={() => changeDay(1)}>Next</button>
-        </div>
-      )}
+    {/* Show date picker only when NHL is expanded */}
+    {isExpanded === "NHL" && (
+      <div className="controls">
+        <button onClick={() => changeDay(-1)}>Previous</button>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <button onClick={() => changeDay(1)}>Next</button>
+      </div>
+    )}
 
-      {loading && <p>Loading games...</p>}
-      {error && <p className="error">{error}</p>}
-      {!loading && !error && gamesToShow.length === 0 && <p>No games available.</p>}
+    {loading && <p>Loading games...</p>}
+    {error && <p className="error">{error}</p>}
+    {!loading && !error && gamesToShow.length === 0 && <p>No games available.</p>}
 
-      {!loading && !error && gamesToShow.length > 0 && (
-        <ul className="mlb-games-list">
-          {gamesToShow.map((game) => (
-            <li key={game.gameId} className={`mlb-game-item ${scoreChanges[game.gameId] ? "score-changed" : ""}`}>
-              <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
-              <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
-              <span className="game-score">
-                {game.state === "in" || game.state === "post"
-                  ? `${game.awayScore} - ${game.homeScore}`
-                  : game.time}
-              </span>
-              <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>
-              <img src={game.homeLogo} alt={game.homeName} className="team-logo" />
-              {game.state === "in" && <span className="live-dot"></span>}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
+    {!loading && !error && gamesToShow.length > 0 && (
+      <ul className="mlb-games-list">
+        {gamesToShow.map((game) => (
+          <li
+            key={game.gameId}
+            className={`mlb-game-item ${scoreChanges[game.gameId] ? "score-changed" : ""}`}
+          >
+            <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
+            <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
+            <span className="game-score">
+              {game.state === "in" || game.state === "post"
+                ? `${game.awayScore} - ${game.homeScore}`
+                : game.time
+              }
+            </span>
+            <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>
+            <img src={game.homeLogo} alt={game.homeName} className="team-logo" />
+            {game.state === "in" && <span className="live-dot"></span>}
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
 }
 
-export default MLBGames;
+export default NHLGames;
