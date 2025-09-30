@@ -6,8 +6,7 @@ function MLBGames({ isExpanded, setExpanded }) {
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [scoreChanges, setScoreChanges] = useState({});
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(getTodayET());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
   useEffect(() => {
@@ -16,27 +15,38 @@ function MLBGames({ isExpanded, setExpanded }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const todayString = () => new Date().toISOString().split("T")[0];
+  function getTodayET() {
+    const now = new Date();
+    const etString = now.toLocaleString("en-US", { timeZone: "America/New_York" });
+    const etDate = new Date(etString);
+    const year = etDate.getFullYear();
+    const month = String(etDate.getMonth() + 1).padStart(2, "0");
+    const day = String(etDate.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
 
   const changeDay = (days) => {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + days);
-    setDate(newDate.toISOString().split("T")[0]);
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, "0");
+    const day = String(newDate.getDate()).padStart(2, "0");
+    setDate(`${year}-${month}-${day}`);
   };
 
-  // Reset date when collapsing
   const toggleExpand = () => {
     if (isExpanded === "MLB") {
       setExpanded(null);
-      setDate(todayString());
+      setDate(getTodayET());
     } else {
       setExpanded("MLB");
     }
   };
 
   useEffect(() => {
+    let interval = null;
+
     const fetchGames = async () => {
-      setLoading(true);
       try {
         const formattedDate = date.replaceAll("-", "");
         const res = await fetch(
@@ -49,6 +59,7 @@ function MLBGames({ isExpanded, setExpanded }) {
           const competitors = event.competitions[0].competitors;
           const awayTeam = competitors[1].team;
           const homeTeam = competitors[0].team;
+
           const awayScore = competitors[1].score || 0;
           const homeScore = competitors[0].score || 0;
 
@@ -78,20 +89,22 @@ function MLBGames({ isExpanded, setExpanded }) {
           };
         }) || [];
 
-        const changes = {};
-        const updatedGames = matchups.map((game) => {
-          const prev = prevGamesRef.current.find((g) => g.gameId === game.gameId);
-          if (prev && (prev.awayScore !== game.awayScore || prev.homeScore !== game.homeScore)) {
-            changes[game.gameId] = true;
-            setTimeout(() => setScoreChanges((prev) => ({ ...prev, [game.gameId]: false })), 1000);
-            return { ...prev, ...game };
-          }
-          return prev || game;
-        });
+        // Update only if games changed
+        const prevIds = prevGamesRef.current.map((g) => g.gameId);
+        const newIds = matchups.map((g) => g.gameId);
+        const isDifferent =
+          matchups.length !== prevGamesRef.current.length ||
+          !matchups.every((g, i) =>
+            g.gameId === prevGamesRef.current[i]?.gameId &&
+            g.awayScore === prevGamesRef.current[i]?.awayScore &&
+            g.homeScore === prevGamesRef.current[i]?.homeScore
+          );
 
-        prevGamesRef.current = updatedGames;
-        setScoreChanges((prev) => ({ ...prev, ...changes }));
-        setGames(updatedGames);
+        if (isDifferent) {
+          prevGamesRef.current = matchups;
+          setGames(matchups);
+        }
+
         setError(null);
       } catch {
         setError("Failed to fetch games");
@@ -101,7 +114,12 @@ function MLBGames({ isExpanded, setExpanded }) {
     };
 
     fetchGames();
-    const interval = setInterval(fetchGames, 2500);
+
+    // Auto-refresh only for today
+    if (date === getTodayET()) {
+      interval = setInterval(fetchGames, 5000);
+    }
+
     return () => clearInterval(interval);
   }, [date]);
 
@@ -118,9 +136,7 @@ function MLBGames({ isExpanded, setExpanded }) {
 
   return (
     <div className="sports-games mlb-games">
-      <h1 className="clickable" onClick={toggleExpand}>
-        MLB
-      </h1>
+      <h1 className="clickable" onClick={toggleExpand}>MLB</h1>
 
       {isExpanded === "MLB" && (
         <div className="controls">
@@ -137,7 +153,7 @@ function MLBGames({ isExpanded, setExpanded }) {
       {!loading && !error && gamesToShow.length > 0 && (
         <ul className="mlb-games-list">
           {gamesToShow.map((game) => (
-            <li key={game.gameId} className={`mlb-game-item ${scoreChanges[game.gameId] ? "score-changed" : ""}`}>
+            <li key={game.gameId} className="mlb-game-item">
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
               <span className="game-score">
@@ -147,7 +163,6 @@ function MLBGames({ isExpanded, setExpanded }) {
               </span>
               <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>
               <img src={game.homeLogo} alt={game.homeName} className="team-logo" />
-              {game.state === "in" && <span className="live-dot"></span>}
             </li>
           ))}
         </ul>

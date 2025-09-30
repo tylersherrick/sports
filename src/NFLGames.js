@@ -1,14 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-function NHLGames({ isExpanded, setExpanded }) {
+function NFLGames({ isExpanded, setExpanded }) {
   const [games, setGames] = useState([]);
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [scoreChanges, setScoreChanges] = useState({});
-  const [date, setDate] = useState(getTodayET());
+  const [week, setWeek] = useState(getCurrentNFLWeek());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+
+  // Helper to determine current week
+  function getCurrentNFLWeek() {
+    const seasonStart = new Date("2025-09-04"); // kickoff date
+    const diff = Math.floor((Date.now() - seasonStart) / (7 * 24 * 60 * 60 * 1000));
+    return Math.max(1, diff + 1);
+  }
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 480);
@@ -16,42 +23,24 @@ function NHLGames({ isExpanded, setExpanded }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  function getTodayET() {
-    const now = new Date();
-    const etString = now.toLocaleString("en-US", { timeZone: "America/New_York" });
-    const etDate = new Date(etString);
-    const year = etDate.getFullYear();
-    const month = String(etDate.getMonth() + 1).padStart(2, "0");
-    const day = String(etDate.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  const changeDay = (days) => {
-    const newDate = new Date(date);
-    newDate.setDate(newDate.getDate() + days);
-    const year = newDate.getFullYear();
-    const month = String(newDate.getMonth() + 1).padStart(2, "0");
-    const day = String(newDate.getDate()).padStart(2, "0");
-    setDate(`${year}-${month}-${day}`);
-  };
-
+  // Reset week when collapsing
   const toggleExpand = () => {
-    if (isExpanded === "NHL") {
+    if (isExpanded === "NFL") {
       setExpanded(null);
-      setDate(getTodayET());
+      setWeek(getCurrentNFLWeek());
     } else {
-      setExpanded("NHL");
+      setExpanded("NFL");
     }
   };
 
   useEffect(() => {
     let interval = null;
 
-    const fetchGames = async () => {
+    const fetchGames = async (showLoading = true) => {
+      if (showLoading) setLoading(true);
       try {
-        const formattedDate = date.replaceAll("-", "");
         const res = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=${formattedDate}`
+          `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?week=${week}`
         );
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
@@ -61,13 +50,16 @@ function NHLGames({ isExpanded, setExpanded }) {
             const competitors = event.competitions[0].competitors;
             const awayTeam = competitors[1].team;
             const homeTeam = competitors[0].team;
-
             const awayScore = competitors[1].score || 0;
             const homeScore = competitors[0].score || 0;
 
             const eventTime = event.date ? new Date(event.date) : null;
             const localTime = eventTime
-              ? eventTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: true })
+              ? eventTime.toLocaleTimeString(undefined, {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })
               : "TBD";
 
             const state = event.status.type.state;
@@ -91,60 +83,69 @@ function NHLGames({ isExpanded, setExpanded }) {
             };
           }) || [];
 
-        // Only update if games changed
-        const prevIds = prevGamesRef.current.map(g => g.gameId);
-        const newIds = matchups.map(g => g.gameId);
-        const isDifferent =
-          matchups.length !== prevGamesRef.current.length ||
-          !matchups.every((g, i) => 
-            g.gameId === prevGamesRef.current[i]?.gameId &&
-            g.awayScore === prevGamesRef.current[i]?.awayScore &&
-            g.homeScore === prevGamesRef.current[i]?.homeScore
-          );
+        const changes = {};
+        const updatedGames = matchups.map((game) => {
+          const prev = prevGamesRef.current.find((g) => g.gameId === game.gameId);
+          if (
+            prev &&
+            (prev.awayScore !== game.awayScore || prev.homeScore !== game.homeScore)
+          ) {
+            changes[game.gameId] = true;
+            setTimeout(
+              () => setScoreChanges((prev) => ({ ...prev, [game.gameId]: false })),
+              1000
+            );
+            return { ...prev, ...game };
+          }
+          return prev || game;
+        });
 
-        if (isDifferent) {
-          prevGamesRef.current = matchups;
-          setGames(matchups);
-        }
-
+        prevGamesRef.current = updatedGames;
+        setScoreChanges((prev) => ({ ...prev, ...changes }));
+        setGames(updatedGames);
         setError(null);
       } catch {
         setError("Failed to fetch games");
       } finally {
-        setLoading(false);
+        if (showLoading) setLoading(false);
       }
     };
 
-    fetchGames();
-
-    // Auto-refresh only for today
-    if (date === getTodayET()) {
-      interval = setInterval(fetchGames, 5000);
-    }
+    fetchGames(true);
+    interval = setInterval(() => fetchGames(false), 2500);
 
     return () => clearInterval(interval);
-  }, [date]);
+  }, [week]);
 
   const orderedGames = [...games].sort((a, b) => {
     const order = { in: 0, pre: 1, post: 2 };
-    const stateA = a.state || "unknown";
-    const stateB = b.state || "unknown";
-    return (order[stateA] ?? 3) - (order[stateB] ?? 3);
+    return (order[a.state] ?? 3) - (order[b.state] ?? 3);
   });
 
-  const gamesToShow = isExpanded === "NHL" ? orderedGames : orderedGames.slice(0, 3);
+  const gamesToShow = isExpanded === "NFL" ? orderedGames : orderedGames.slice(0, 3);
 
-  if (isExpanded && isExpanded !== "NHL") return null;
+  if (isExpanded && isExpanded !== "NFL") return null;
 
   return (
-    <div className="sports-games nhl-games">
-      <h1 className="clickable" onClick={toggleExpand}>NHL</h1>
+    <div className="sports-games nfl-games">
+      <h1 className="clickable" onClick={toggleExpand}>
+        NFL
+      </h1>
 
-      {isExpanded === "NHL" && (
+      {isExpanded === "NFL" && (
         <div className="controls">
-          <button onClick={() => changeDay(-1)}>Previous</button>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-          <button onClick={() => changeDay(1)}>Next</button>
+          <label htmlFor="week">Week:</label>
+          <select
+            id="week"
+            value={week}
+            onChange={(e) => setWeek(Number(e.target.value))}
+          >
+            {Array.from({ length: 18 }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                Week {i + 1}
+              </option>
+            ))}
+          </select>
         </div>
       )}
 
@@ -153,17 +154,26 @@ function NHLGames({ isExpanded, setExpanded }) {
       {!loading && !error && gamesToShow.length === 0 && <p>No games available.</p>}
 
       {!loading && !error && gamesToShow.length > 0 && (
-        <ul className="mlb-games-list">
+        <ul className="nfl-games-list">
           {gamesToShow.map((game) => (
-            <li key={game.gameId} className={`mlb-game-item ${scoreChanges[game.gameId] ? "score-changed" : ""}`}>
+            <li
+              key={game.gameId}
+              className={`nfl-game-item ${
+                scoreChanges[game.gameId] ? "score-changed" : ""
+              }`}
+            >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
-              <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
+              <span className="team-name">
+                {isMobile ? game.awayAbbr : game.awayName}
+              </span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
                   ? `${game.awayScore} - ${game.homeScore}`
                   : game.time}
               </span>
-              <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>
+              <span className="team-name">
+                {isMobile ? game.homeAbbr : game.homeName}
+              </span>
               <img src={game.homeLogo} alt={game.homeName} className="team-logo" />
             </li>
           ))}
@@ -173,4 +183,4 @@ function NHLGames({ isExpanded, setExpanded }) {
   );
 }
 
-export default NHLGames;
+export default NFLGames;
