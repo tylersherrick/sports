@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
+import mlbVariables from './variables/mlbVariables';
 
 function MLBGames({ isExpanded, setExpanded }) {
   const [games, setGames] = useState([]);
@@ -25,14 +26,15 @@ function MLBGames({ isExpanded, setExpanded }) {
     return `${year}-${month}-${day}`;
   }
 
-  const changeDay = (days) => {
-    const newDate = new Date(date);
+  function changeDay(days) {
+    const [year, month, day] = date.split("-").map(Number);
+    const newDate = new Date(year, month - 1, day);
     newDate.setDate(newDate.getDate() + days);
-    const year = newDate.getFullYear();
-    const month = String(newDate.getMonth() + 1).padStart(2, "0");
-    const day = String(newDate.getDate()).padStart(2, "0");
-    setDate(`${year}-${month}-${day}`);
-  };
+    const newYear = newDate.getFullYear();
+    const newMonth = String(newDate.getMonth() + 1).padStart(2, "0");
+    const newDay = String(newDate.getDate()).padStart(2, "0");
+    setDate(`${newYear}-${newMonth}-${newDay}`);
+  }
 
   const toggleExpand = () => {
     if (isExpanded === "MLB") {
@@ -55,49 +57,38 @@ function MLBGames({ isExpanded, setExpanded }) {
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
 
-        const matchups = data.events?.map((event) => {
-          const competitors = event.competitions[0].competitors;
-          const awayTeam = competitors[1].team;
-          const homeTeam = competitors[0].team;
+        const matchups =
+          data.events?.map((event) => {
+            const vars = mlbVariables(event); // get all variables
+            const eventTime = event.date ? new Date(event.date) : null;
+            const localTime = eventTime
+              ? eventTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: true })
+              : "TBD";
 
-          const awayScore = competitors[1].score || 0;
-          const homeScore = competitors[0].score || 0;
+            return {
+              gameId: vars.gameId,
+              awayName: vars.awayTeam,
+              homeName: vars.homeTeam,
+              awayAbbr: vars.shortAwayTeam,
+              homeAbbr: vars.shortHomeTeam,
+              awayScore: vars.awayScore,
+              homeScore: vars.homeScore,
+              time: localTime,
+              awayLogo: vars.awayLogo,
+              homeLogo: vars.homeLogo,
+              state: event.status.type.state,
+              vars // include full variables for individual game view
+            };
+          }) || [];
 
-          const eventTime = event.date ? new Date(event.date) : null;
-          const localTime = eventTime
-            ? eventTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: true })
-            : "TBD";
-
-          const state = event.status.type.state;
-          const gameId = event.id;
-
-          const awayAbbr = awayTeam.abbreviation || awayTeam.displayName.slice(0, 3);
-          const homeAbbr = homeTeam.abbreviation || homeTeam.displayName.slice(0, 3);
-
-          return {
-            gameId,
-            awayName: awayTeam.displayName,
-            homeName: homeTeam.displayName,
-            awayAbbr,
-            homeAbbr,
-            awayScore,
-            homeScore,
-            time: localTime,
-            awayLogo: awayTeam.logo,
-            homeLogo: homeTeam.logo,
-            state,
-          };
-        }) || [];
-
-        // Update only if games changed
-        const prevIds = prevGamesRef.current.map((g) => g.gameId);
-        const newIds = matchups.map((g) => g.gameId);
+        const prev = prevGamesRef.current;
         const isDifferent =
-          matchups.length !== prevGamesRef.current.length ||
-          !matchups.every((g, i) =>
-            g.gameId === prevGamesRef.current[i]?.gameId &&
-            g.awayScore === prevGamesRef.current[i]?.awayScore &&
-            g.homeScore === prevGamesRef.current[i]?.homeScore
+          matchups.length !== prev.length ||
+          !matchups.every(
+            (g, i) =>
+              g.gameId === prev[i]?.gameId &&
+              g.awayScore === prev[i]?.awayScore &&
+              g.homeScore === prev[i]?.homeScore
           );
 
         if (isDifferent) {
@@ -115,7 +106,6 @@ function MLBGames({ isExpanded, setExpanded }) {
 
     fetchGames();
 
-    // Auto-refresh only for today
     if (date === getTodayET()) {
       interval = setInterval(fetchGames, 5000);
     }
@@ -125,9 +115,7 @@ function MLBGames({ isExpanded, setExpanded }) {
 
   const orderedGames = [...games].sort((a, b) => {
     const order = { in: 0, pre: 1, post: 2 };
-    const stateA = a.state || "unknown";
-    const stateB = b.state || "unknown";
-    return (order[stateA] ?? 3) - (order[stateB] ?? 3);
+    return (order[a.state] ?? 3) - (order[b.state] ?? 3);
   });
 
   const gamesToShow = isExpanded === "MLB" ? orderedGames : orderedGames.slice(0, 3);
@@ -136,12 +124,18 @@ function MLBGames({ isExpanded, setExpanded }) {
 
   return (
     <div className="sports-games mlb-games">
-      <h1 className="clickable" onClick={toggleExpand}>MLB</h1>
+      <h1 className="clickable" onClick={toggleExpand}>
+        MLB
+      </h1>
 
       {isExpanded === "MLB" && (
         <div className="controls">
           <button onClick={() => changeDay(-1)}>Previous</button>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
           <button onClick={() => changeDay(1)}>Next</button>
         </div>
       )}
