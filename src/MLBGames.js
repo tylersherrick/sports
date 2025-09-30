@@ -77,19 +77,22 @@ function MLBGames({ isExpanded, setExpanded }) {
               awayLogo: vars.awayLogo,
               homeLogo: vars.homeLogo,
               state: event.status.type.state,
+              inning: vars.inning,
               vars // include full variables for individual game view
             };
           }) || [];
 
-        const prev = prevGamesRef.current;
         const isDifferent =
-          matchups.length !== prev.length ||
+          matchups.length !== prevGamesRef.current.length ||
           !matchups.every(
             (g, i) =>
-              g.gameId === prev[i]?.gameId &&
-              g.awayScore === prev[i]?.awayScore &&
-              g.homeScore === prev[i]?.homeScore
+              g.gameId === prevGamesRef.current[i]?.gameId &&
+              g.awayScore === prevGamesRef.current[i]?.awayScore &&
+              g.homeScore === prevGamesRef.current[i]?.homeScore &&
+              g.inning === prevGamesRef.current[i]?.inning &&
+              g.state === prevGamesRef.current[i]?.state
           );
+
 
         if (isDifferent) {
           prevGamesRef.current = matchups;
@@ -152,7 +155,7 @@ function MLBGames({ isExpanded, setExpanded }) {
               <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
-                  ? `${game.awayScore} - ${game.homeScore}`
+                  ? `${game.awayScore} - ${game.inning} - ${game.homeScore}`
                   : game.time}
               </span>
               <span className="team-name">{isMobile ? game.homeAbbr : game.homeName}</span>

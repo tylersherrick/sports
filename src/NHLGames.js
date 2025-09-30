@@ -95,6 +95,7 @@ function NHLGames({ isExpanded, setExpanded }) {
               time: localTime,
               awayLogo: awayTeam.logo,
               homeLogo: homeTeam.logo,
+              period: event.status.type.shortDetail,
               state,
             };
           }) || [];
@@ -106,7 +107,9 @@ function NHLGames({ isExpanded, setExpanded }) {
             (g, i) =>
               g.gameId === prevGamesRef.current[i]?.gameId &&
               g.awayScore === prevGamesRef.current[i]?.awayScore &&
-              g.homeScore === prevGamesRef.current[i]?.homeScore
+              g.homeScore === prevGamesRef.current[i]?.homeScore &&
+              g.period === prevGamesRef.current[i]?.period &&
+              g.state === prevGamesRef[i]?.state
           );
 
         if (isMounted && isDifferent) {
@@ -129,7 +132,7 @@ function NHLGames({ isExpanded, setExpanded }) {
 
     // ✅ Auto-refresh only if today
     if (date === getTodayET()) {
-      interval = setInterval(fetchGames, 5000);
+      interval = setInterval(fetchGames, 1000);
     }
 
     return () => {
@@ -182,7 +185,7 @@ function NHLGames({ isExpanded, setExpanded }) {
               </span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
-                  ? `${game.awayScore} - ${game.homeScore}`
+                  ? `${game.awayScore} - ${game.period} - ${game.homeScore}`
                   : game.time}
               </span>
               <span className="team-name">
