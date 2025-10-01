@@ -10,11 +10,34 @@ function NFLGames({ isExpanded, setExpanded }) {
   const [week, setWeek] = useState(getCurrentNFLWeek());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
-  // Helper to determine current week
   function getCurrentNFLWeek() {
-    const seasonStart = new Date("2025-09-04"); // kickoff date
-    const diff = Math.floor((Date.now() - seasonStart) / (7 * 24 * 60 * 60 * 1000));
+    const SEASON_START = new Date("2025-09-03T00:00:00Z");
+    const diff = Math.floor((Date.now() - SEASON_START) / (7 * 24 * 60 * 60 * 1000));
     return Math.max(1, diff + 1);
+  }
+
+  function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+
+  function getWeekRange(weekNumber) {
+    const SEASON_START = new Date("2025-09-04T00:00:00Z");
+    const startDate = new Date(SEASON_START);
+    startDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 6);
+
+    const opts = { month: "short", day: "numeric" };
+    return `${startDate.toLocaleDateString("en-US", opts)} - ${endDate.toLocaleDateString(
+      "en-US",
+      opts
+    )}`;
   }
 
   useEffect(() => {
@@ -23,7 +46,6 @@ function NFLGames({ isExpanded, setExpanded }) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Reset week when collapsing
   const toggleExpand = () => {
     if (isExpanded === "NFL") {
       setExpanded(null);
@@ -32,6 +54,9 @@ function NFLGames({ isExpanded, setExpanded }) {
       setExpanded("NFL");
     }
   };
+
+  const prevWeek = () => setWeek((w) => Math.max(1, w - 1));
+  const nextWeek = () => setWeek((w) => Math.min(18, w + 1));
 
   useEffect(() => {
     let interval = null;
@@ -53,14 +78,8 @@ function NFLGames({ isExpanded, setExpanded }) {
             const awayScore = competitors[1].score || 0;
             const homeScore = competitors[0].score || 0;
 
-            const eventTime = event.date ? new Date(event.date) : null;
-            const localTime = eventTime
-              ? eventTime.toLocaleTimeString(undefined, {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: true,
-                })
-              : "TBD";
+            const eventDate = event.date || null;
+            const dateTime = eventDate ? formatDateTime(eventDate) : "TBD";
 
             const state = event.status.type.state;
             const gameId = event.id;
@@ -76,7 +95,7 @@ function NFLGames({ isExpanded, setExpanded }) {
               homeAbbr,
               awayScore,
               homeScore,
-              time: localTime,
+              dateTime,
               awayLogo: awayTeam.logo,
               homeLogo: homeTeam.logo,
               state,
@@ -113,7 +132,6 @@ function NFLGames({ isExpanded, setExpanded }) {
 
     fetchGames(true);
     interval = setInterval(() => fetchGames(false), 2500);
-
     return () => clearInterval(interval);
   }, [week]);
 
@@ -135,6 +153,9 @@ function NFLGames({ isExpanded, setExpanded }) {
       {isExpanded === "NFL" && (
         <div className="controls">
           <label htmlFor="week">Week:</label>
+          <button className="week-arrow" onClick={prevWeek}>
+            ◀
+          </button>
           <select
             id="week"
             value={week}
@@ -142,10 +163,13 @@ function NFLGames({ isExpanded, setExpanded }) {
           >
             {Array.from({ length: 18 }, (_, i) => (
               <option key={i + 1} value={i + 1}>
-                Week {i + 1}
+                Week {i + 1} ({getWeekRange(i + 1)})
               </option>
             ))}
           </select>
+          <button className="week-arrow" onClick={nextWeek}>
+            ▶
+          </button>
         </div>
       )}
 
@@ -169,7 +193,7 @@ function NFLGames({ isExpanded, setExpanded }) {
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
                   ? `${game.awayScore} - ${game.homeScore}`
-                  : game.time}
+                  : game.dateTime}
               </span>
               <span className="team-name">
                 {isMobile ? game.homeAbbr : game.homeName}

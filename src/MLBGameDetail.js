@@ -12,7 +12,7 @@ function CFBGames({ isExpanded, setExpanded }) {
 
   // Season starts Aug 28, 2025
   function getCurrentCFBWeek() {
-    const SEASON_START = new Date("2025-08-27T00:00:00Z");
+    const SEASON_START = new Date("2025-08-28T00:00:00Z");
     const today = new Date();
     const diff = Math.floor((today - SEASON_START) / (7 * 24 * 60 * 60 * 1000));
     return Math.max(1, diff + 1);
@@ -69,35 +69,48 @@ function CFBGames({ isExpanded, setExpanded }) {
         if (!res.ok) throw new Error("Network response was not ok");
         const data = await res.json();
 
-        // map + filter to only include games with at least one ranked team
-        const matchups = (data.events || [])
-          .map((event) => {
+        const matchups =
+          data.events?.map((event) => {
             const competitors = event.competitions[0].competitors;
             const awayTeam = competitors[1].team;
             const homeTeam = competitors[0].team;
             const awayScore = competitors[1].score || 0;
             const homeScore = competitors[0].score || 0;
 
-            const awayRank = competitors[1].curatedRank?.current || 0;
-            const homeRank = competitors[0].curatedRank?.current || 0;
+            const eventDate = event.date || null;
+            const dateTime = eventDate ? formatDateTime(eventDate) : "TBD";
+
+            const state = event.status.type.state;
+            const gameId = event.id;
+
+            const awayAbbr = awayTeam.abbreviation || awayTeam.displayName.slice(0, 3);
+            const homeAbbr = homeTeam.abbreviation || homeTeam.displayName.slice(0, 3);
+
+            const awayRank =
+              competitors[1].curatedRank?.current && competitors[1].curatedRank.current <= 25
+                ? competitors[1].curatedRank.current
+                : "";
+            const homeRank =
+              competitors[0].curatedRank?.current && competitors[0].curatedRank.current <= 25
+                ? competitors[0].curatedRank.current
+                : "";
 
             return {
-              gameId: event.id,
+              gameId,
               awayName: awayTeam.displayName,
               homeName: homeTeam.displayName,
-              awayAbbr: awayTeam.abbreviation || awayTeam.displayName.slice(0, 3),
-              homeAbbr: homeTeam.abbreviation || homeTeam.displayName.slice(0, 3),
+              awayAbbr,
+              homeAbbr,
               awayScore,
               homeScore,
-              dateTime: event.date ? formatDateTime(event.date) : "TBD",
+              dateTime,
               awayLogo: awayTeam.logo,
               homeLogo: homeTeam.logo,
-              state: event.status.type.state,
-              awayRank: awayRank <= 25 ? awayRank : 0,
-              homeRank: homeRank <= 25 ? homeRank : 0,
+              state,
+              awayRank,
+              homeRank,
             };
-          })
-          .filter((g) => g.awayRank > 0 || g.homeRank > 0);
+          }) || [];
 
         const changes = {};
         const updatedGames = matchups.map((game) => {
@@ -144,12 +157,6 @@ function CFBGames({ isExpanded, setExpanded }) {
       {isExpanded === "CFB" && (
         <div className="controls">
           <label htmlFor="week">Week:</label>
-          <button
-            onClick={() => setWeek((prev) => Math.max(1, prev - 1))}
-            className="week-arrow"
-          >
-            ◀
-          </button>
           <select
             id="week"
             value={week}
@@ -161,12 +168,6 @@ function CFBGames({ isExpanded, setExpanded }) {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => setWeek((prev) => Math.min(18, prev + 1))}
-            className="week-arrow"
-          >
-            ▶
-          </button>
         </div>
       )}
 
@@ -184,7 +185,7 @@ function CFBGames({ isExpanded, setExpanded }) {
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">
                 {isMobile ? game.awayAbbr : game.awayName}{" "}
-                {game.awayRank > 0 && <span className="team-rank">{game.awayRank}</span>}
+                {game.awayRank && <span className="team-rank">{game.awayRank}</span>}
               </span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
@@ -192,7 +193,7 @@ function CFBGames({ isExpanded, setExpanded }) {
                   : game.dateTime}
               </span>
               <span className="team-name">
-                {game.homeRank > 0 && <span className="team-rank">{game.homeRank} </span>}
+                {game.homeRank && <span className="team-rank">{game.homeRank} </span>}
                 {isMobile ? game.homeAbbr : game.homeName}
               </span>
               <img src={game.homeLogo} alt={game.homeName} className="team-logo" />

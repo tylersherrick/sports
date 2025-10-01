@@ -23,21 +23,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6em;
+  gap: 0.4em;
   margin-bottom: 1em;
   flex-wrap: wrap;
 }
 
-.controls button,
-.controls select {
-  padding: 0.5em 0.8em;
+.week-arrow {
+  padding: 0.4em 0.8em;
   font-size: 1em;
   cursor: pointer;
+  background: #eee;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.controls input[type="date"] {
-  padding: 0.4em;
+.controls select {
+  padding: 0.4em 0.6em;
   font-size: 1em;
+  cursor: pointer;
 }
 
 /* ============================
@@ -112,9 +118,10 @@
 @media (max-width: 1000px) {
   .controls button,
   .controls input[type="date"],
-  .controls select {
+  .controls select,
+  .week-arrow {
     font-size: 0.9em;
-    padding: 0.4em 0.6em;
+    padding: 0.3em 0.5em;
   }
 
   .mlb-game-item,
