@@ -99,6 +99,7 @@ function NFLGames({ isExpanded, setExpanded }) {
               awayLogo: awayTeam.logo,
               homeLogo: homeTeam.logo,
               state,
+              gameStatus: event.status.type.shortDetail,
             };
           }) || [];
 
@@ -192,7 +193,7 @@ function NFLGames({ isExpanded, setExpanded }) {
               </span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
-                  ? `${game.awayScore} - ${game.homeScore}`
+                  ? `${game.awayScore} - ${game.gameStatus} - ${game.homeScore}`
                   : game.dateTime}
               </span>
               <span className="team-name">

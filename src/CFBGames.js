@@ -12,7 +12,7 @@ function CFBGames({ isExpanded, setExpanded }) {
 
   // Season starts Aug 28, 2025
   function getCurrentCFBWeek() {
-    const SEASON_START = new Date("2025-08-27T00:00:00Z");
+    const SEASON_START = new Date("2025-08-26T00:00:00Z");
     const today = new Date();
     const diff = Math.floor((today - SEASON_START) / (7 * 24 * 60 * 60 * 1000));
     return Math.max(1, diff + 1);
@@ -29,7 +29,7 @@ function CFBGames({ isExpanded, setExpanded }) {
   }
 
   function getWeekRange(weekNumber) {
-    const SEASON_START = new Date("2025-08-28T00:00:00Z");
+    const SEASON_START = new Date("2025-08-26T00:00:00Z");
     const startDate = new Date(SEASON_START);
     startDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
     const endDate = new Date(startDate);
@@ -80,7 +80,7 @@ function CFBGames({ isExpanded, setExpanded }) {
 
             const awayRank = competitors[1].curatedRank?.current || 0;
             const homeRank = competitors[0].curatedRank?.current || 0;
-
+            console.log(data);
             return {
               gameId: event.id,
               awayName: awayTeam.displayName,
@@ -95,6 +95,7 @@ function CFBGames({ isExpanded, setExpanded }) {
               state: event.status.type.state,
               awayRank: awayRank <= 25 ? awayRank : 0,
               homeRank: homeRank <= 25 ? homeRank : 0,
+              gameStatus: event.status.type.shortDetail,
             };
           })
           .filter((g) => g.awayRank > 0 || g.homeRank > 0);
@@ -188,7 +189,7 @@ function CFBGames({ isExpanded, setExpanded }) {
               </span>
               <span className="game-score">
                 {game.state === "in" || game.state === "post"
-                  ? `${game.awayScore} - ${game.homeScore}`
+                  ? `${game.awayScore} - ${game.gameStatus} - ${game.homeScore}`
                   : game.dateTime}
               </span>
               <span className="team-name">
