@@ -80,7 +80,6 @@ function CFBGames({ isExpanded, setExpanded }) {
 
             const awayRank = competitors[1].curatedRank?.current || 0;
             const homeRank = competitors[0].curatedRank?.current || 0;
-            console.log(data);
             return {
               gameId: event.id,
               awayName: awayTeam.displayName,

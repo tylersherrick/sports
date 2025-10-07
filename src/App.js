@@ -3,6 +3,7 @@ import MLBGames from "./MLBGames";
 import NHLGames from "./NHLGames";
 import NFLGames from "./NFLGames";
 import CFBGames from "./CFBGames";
+import NBAGames from "./NBAGames";
 
 function Sports() {
   const [isExpanded, setExpanded] = useState(null); // 'MLB' or 'NHL'
@@ -14,6 +15,7 @@ function Sports() {
       <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} />
+      <NBAGames isExpanded={isExpanded} setExpanded={setExpanded} />
     </div>
   );
 }
