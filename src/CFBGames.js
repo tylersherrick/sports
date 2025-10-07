@@ -96,6 +96,7 @@ function CFBGames({ isExpanded, setExpanded }) {
               homeRank: homeRank <= 25 ? homeRank : 0,
               gameStatus: event.status.type.shortDetail,
             };
+            
           })
           .filter((g) => g.awayRank > 0 || g.homeRank > 0);
 
@@ -173,7 +174,7 @@ function CFBGames({ isExpanded, setExpanded }) {
       {loading && <p>Loading games...</p>}
       {error && <p className="error">{error}</p>}
       {!loading && !error && gamesToShow.length === 0 && <p>No games available.</p>}
-
+  
       {!loading && !error && gamesToShow.length > 0 && (
         <ul className="cfb-games-list">
           {gamesToShow.map((game) => (

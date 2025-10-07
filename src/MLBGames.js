@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import mlbVariables from './variables/mlbVariables';
+import MLBGameDetail from "./MLBGameDetail"; // ✅ import detail view
 
 function MLBGames({ isExpanded, setExpanded }) {
   const [games, setGames] = useState([]);
+  const [selectedGame, setSelectedGame] = useState(null); // ✅ track selected game
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -59,7 +61,7 @@ function MLBGames({ isExpanded, setExpanded }) {
 
         const matchups =
           data.events?.map((event) => {
-            const vars = mlbVariables(event); // get all variables
+            const vars = mlbVariables(event);
             const eventTime = event.date ? new Date(event.date) : null;
             const localTime = eventTime
               ? eventTime.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: true })
@@ -78,7 +80,7 @@ function MLBGames({ isExpanded, setExpanded }) {
               homeLogo: vars.homeLogo,
               state: event.status.type.state,
               inning: vars.inning,
-              vars // include full variables for individual game view
+              vars
             };
           }) || [];
 
@@ -92,7 +94,6 @@ function MLBGames({ isExpanded, setExpanded }) {
               g.inning === prevGamesRef.current[i]?.inning &&
               g.state === prevGamesRef.current[i]?.state
           );
-
 
         if (isDifferent) {
           prevGamesRef.current = matchups;
@@ -125,6 +126,16 @@ function MLBGames({ isExpanded, setExpanded }) {
 
   if (isExpanded && isExpanded !== "MLB") return null;
 
+  // ✅ if a game is selected, show the detail component
+  if (selectedGame) {
+    return (
+      <MLBGameDetail
+        game={selectedGame}
+        onBack={() => setSelectedGame(null)}
+      />
+    );
+  }
+
   return (
     <div className="sports-games mlb-games">
       <h1 className="clickable" onClick={toggleExpand}>
@@ -150,7 +161,13 @@ function MLBGames({ isExpanded, setExpanded }) {
       {!loading && !error && gamesToShow.length > 0 && (
         <ul className="mlb-games-list">
           {gamesToShow.map((game) => (
-            <li key={game.gameId} className="mlb-game-item">
+            <li
+              key={game.gameId}
+              className="mlb-game-item"
+              onClick={() => {
+                setSelectedGame(game); // ✅ show detail
+              }}
+            >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
               <span className="game-score">

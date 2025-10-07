@@ -11,7 +11,7 @@ function NFLGames({ isExpanded, setExpanded }) {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
   function getCurrentNFLWeek() {
-    const SEASON_START = new Date("2025-09-03T00:00:00Z");
+    const SEASON_START = new Date("2025-09-02T00:00:00Z");
     const diff = Math.floor((Date.now() - SEASON_START) / (7 * 24 * 60 * 60 * 1000));
     return Math.max(1, diff + 1);
   }
