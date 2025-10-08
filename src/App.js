@@ -4,14 +4,32 @@ import NHLGames from "./NHLGames";
 import NFLGames from "./NFLGames";
 import CFBGames from "./CFBGames";
 import NBAGames from "./NBAGames";
+import MLBGameDetail from "./MLBGameDetail";
 
 function Sports() {
-  const [isExpanded, setExpanded] = useState(null); // 'MLB' or 'NHL'
+  const [isExpanded, setExpanded] = useState(null);
+  const [selectedGame, setSelectedGame] = useState(null); // track the clicked game
+
+  // If a game is selected, only show the detail view
+  if (selectedGame?.league === "MLB") {
+    return (
+      <MLBGameDetail
+        game={selectedGame.game}
+        onBack={() => setSelectedGame(null)} // back resets selection
+      />
+    );
+  }
 
   return (
     <div className="sports-container">
       {!isExpanded && <p className="default-text">Today's Sporting Events</p>}
-      <MLBGames isExpanded={isExpanded} setExpanded={setExpanded} />
+
+      {/* Pass setSelectedGame to MLBGames */}
+      <MLBGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+        setSelectedGame={setSelectedGame}
+      />
       <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} />

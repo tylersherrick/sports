@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 import mlbVariables from './variables/mlbVariables';
-import MLBGameDetail from "./MLBGameDetail"; // ✅ import detail view
 
-function MLBGames({ isExpanded, setExpanded }) {
+function MLBGames({ isExpanded, setExpanded, setSelectedGame }) {
   const [games, setGames] = useState([]);
-  const [selectedGame, setSelectedGame] = useState(null); // ✅ track selected game
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -126,16 +124,6 @@ function MLBGames({ isExpanded, setExpanded }) {
 
   if (isExpanded && isExpanded !== "MLB") return null;
 
-  // ✅ if a game is selected, show the detail component
-  if (selectedGame) {
-    return (
-      <MLBGameDetail
-        game={selectedGame}
-        onBack={() => setSelectedGame(null)}
-      />
-    );
-  }
-
   return (
     <div className="sports-games mlb-games">
       <h1 className="clickable" onClick={toggleExpand}>
@@ -164,9 +152,7 @@ function MLBGames({ isExpanded, setExpanded }) {
             <li
               key={game.gameId}
               className="mlb-game-item"
-              onClick={() => {
-                setSelectedGame(game); // ✅ show detail
-              }}
+              onClick={() => setSelectedGame({ league: "MLB", game })} // ✅ lift selection
             >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">{isMobile ? game.awayAbbr : game.awayName}</span>
