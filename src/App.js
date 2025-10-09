@@ -25,11 +25,7 @@ function Sports() {
       {!isExpanded && <p className="default-text">Today's Sporting Events</p>}
 
       {/* Pass setSelectedGame to MLBGames */}
-      <MLBGames
-        isExpanded={isExpanded}
-        setExpanded={setExpanded}
-        setSelectedGame={setSelectedGame}
-      />
+      <MLBGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
       <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} />
       <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} />
