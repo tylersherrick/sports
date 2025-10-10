@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-function NHLGames({ isExpanded, setExpanded }) {
+function NHLGames({ isExpanded, setExpanded, setSelectedGame }) {
   const [games, setGames] = useState([]);
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [scoreChanges, setScoreChanges] = useState({});
   const [date, setDate] = useState(getTodayET());
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
 
@@ -51,7 +50,6 @@ function NHLGames({ isExpanded, setExpanded }) {
   // ✅ Fetch NHL Games
   useEffect(() => {
     let interval = null;
-    let isMounted = true;
 
     const fetchGames = async () => {
       try {
@@ -109,36 +107,31 @@ function NHLGames({ isExpanded, setExpanded }) {
               g.awayScore === prevGamesRef.current[i]?.awayScore &&
               g.homeScore === prevGamesRef.current[i]?.homeScore &&
               g.period === prevGamesRef.current[i]?.period &&
-              g.state === prevGamesRef[i]?.state
+              g.state === prevGamesRef.current[i]?.state
           );
 
-        if (isMounted && isDifferent) {
+        if (isDifferent) {
           prevGamesRef.current = matchups;
           setGames(matchups);
-          setError(null);
-          setLoading(false);
         }
+
+        setError(null);
       } catch {
-        if (isMounted) {
-          setError("Failed to fetch games");
-          setLoading(false);
-        }
+        setError("Failed to fetch games");
+      } finally {
+        setLoading(false);
       }
     };
 
     // ✅ Initial fetch
-    setLoading(true);
     fetchGames();
 
     // ✅ Auto-refresh only if today
     if (date === getTodayET()) {
-      interval = setInterval(fetchGames, 1000);
+      interval = setInterval(fetchGames, 5000);
     }
 
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [date]);
 
   // ✅ Order games (in-progress → pre → post)
@@ -178,7 +171,11 @@ function NHLGames({ isExpanded, setExpanded }) {
       {!loading && !error && gamesToShow.length > 0 && (
         <ul className="nhl-games-list">
           {gamesToShow.map((game) => (
-            <li key={game.gameId} className="nhl-game-item">
+            <li
+              key={game.gameId}
+              className="nhl-game-item"
+              onClick={() => setSelectedGame({ league: "NHL", game })} // ✅ lift selection
+            >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">
                 {isMobile ? game.awayAbbr : game.awayName}

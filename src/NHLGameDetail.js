@@ -52,9 +52,6 @@ const styles = {
     transition: "transform 0.3s ease",
     objectFit: "contain",
   }),
-  teamLogoHover: {
-    transform: "scale(1.05)",
-  },
   scoreContainer: (isMobile) => ({
     textAlign: "center",
     padding: isMobile ? "0 0.5rem" : "0 2rem",
@@ -73,48 +70,35 @@ const styles = {
     marginBottom: "1.5rem",
     boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
   }),
-  diamondContainer: {
+  rinkContainer: {
     position: "relative",
-    width: "120px",
-    height: "120px",
+    width: "200px",
+    height: "100px",
     margin: "0 auto",
+    border: "3px solid rgba(255,255,255,0.5)",
+    borderRadius: "50px",
+    background: "rgba(255,255,255,0.1)",
   },
-  base: (active) => ({
+  centerLine: {
     position: "absolute",
-    top: "50%",
-    width: "30px",
-    height: "30px",
-    background: active ? "#34d399" : "rgba(255,255,255,0.3)",
-    border: active ? "3px solid #10b981" : "2px solid rgba(255,255,255,0.5)",
-    borderRadius: "6px",
-    transition: "all 0.3s ease",
-    transform: "translateY(-50%)",
-    boxShadow: active ? "0 4px 12px rgba(16,185,129,0.4)" : "none",
-  }),
-  baseSecond: {
     left: "50%",
-    transform: "translateX(-50%) translateY(-50%) rotate(45deg)",
-  },
-  baseThird: {
-    top: "50%",
-    left: "0",
-    transform: "translateY(-50%) translateX(0) rotate(45deg)",
-  },
-  baseFirst: {
-    top: "50%",
-    right: "0",
-    transform: "translateY(-50%) translateX(0) rotate(45deg)",
-  },
-  homePlate: {
-    position: "absolute",
+    top: "0",
     bottom: "0",
-    left: "50%",
+    width: "3px",
+    background: "rgba(255,255,255,0.5)",
     transform: "translateX(-50%)",
-    width: 0,
-    height: 0,
-    borderLeft: "18px solid transparent",
-    borderRight: "18px solid transparent",
-    borderBottom: "24px solid rgba(255,255,255,0.5)",
+  },
+  puck: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "20px",
+    height: "20px",
+    borderRadius: "50%",
+    background: "#1a1a1a",
+    border: "2px solid white",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
   },
   count: {
     textAlign: "center",
@@ -187,7 +171,7 @@ const styles = {
   },
 };
 
-function MLBGameDetail({ game, onBack }) {
+function NHLGameDetail({ game, onBack }) {
   const [liveGame, setLiveGame] = useState(game);
   const [activeTab, setActiveTab] = useState("overview");
   const [hoverBack, setHoverBack] = useState(false);
@@ -206,7 +190,7 @@ function MLBGameDetail({ game, onBack }) {
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=${game.gameId}`
+          `https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=${game.gameId}`
         );
         const data = await res.json();
         if (data.header?.competitions?.[0]) {
@@ -216,19 +200,26 @@ function MLBGameDetail({ game, onBack }) {
             awayScore: competition.competitors[1].score,
             homeScore: competition.competitors[0].score,
             state: data.header.status.type.state,
-            inning: data.header.status.type.detail,
-            vars: {
-              ...game.vars,
-              balls: competition.situation?.balls ?? 0,
-              strikes: competition.situation?.strikes ?? 0,
-              outs: data.header.competitions[0].outsText || "0",
-              onFirst: competition.situation?.onFirst ?? false,
-              onSecond: competition.situation?.onSecond ?? false,
-              onThird: competition.situation?.onThird ?? false,
-              currentBatter: competition.situation?.batter?.athlete?.displayName || "",
-              currentPitcher: competition.situation?.pitcher?.athlete?.displayName || "",
-              lastPlay: competition.situation?.lastPlay?.text || ""
-            }
+            period: data.header.status.type.detail,
+            gameId: game.id,
+            attendance: game.competitions[0].attendance,
+            awayTeam: game.competitions[0].competitors[1].team.displayName,
+            homeTeam: game.competitions[0].competitors[0].team.displayName,
+            awayLogo: game.competitions[0].competitors[1].team.logo,
+            awayScore: game.competitions[0].competitors[1].score,
+            homeLogo: game.competitions[0].competitors[0].team.logo,
+            homeScore: game.competitions[0].competitors[0].score,
+            shortAwayTeam: game.competitions[0].competitors[1].team.abbreviation,
+            shortHomeTeam: game.competitions[0].competitors[0].team.abbreviation,
+            time: game.status.type.detail,
+            scheduleTime: game.status.type.shortDetail,
+            gameStatus: game.status.type.description,
+            awayRecord: game.competitions[0].competitors[1].records[0].summary,
+            homeRecord: game.competitions[0].competitors[0].records[0].summary,
+            venue: game.competitions[0].venue.fullName,
+            spread: game.competitions[0].odds?.[0]?.details || "",
+            awayOdds: game.competitions[0].odds?.[0]?.awayTeamOdds?.moneyLine || "",
+            homeOdds: game.competitions[0].odds?.[0]?.awayTeamOdds?.moneyLine || "",
           };
           setLiveGame(updatedGame);
         }
@@ -250,8 +241,9 @@ function MLBGameDetail({ game, onBack }) {
     homeLogo,
     awayAbbr,
     homeAbbr,
+    period,
+    awayRecord,
   } = liveGame;
-
   const isPreGame = state === "pre";
   const isFinal = state === "post";
   const isInProgress = state === "in";
@@ -278,7 +270,7 @@ function MLBGameDetail({ game, onBack }) {
         {/* Teams and Score */}
         <div style={{
           display: "flex",
-          flexDirection: isMobile ? "row" : "row",
+          flexDirection: "row",
           justifyContent: "space-between",
           alignItems: "center",
           gap: isMobile ? "0.75rem" : "2rem",
@@ -287,7 +279,7 @@ function MLBGameDetail({ game, onBack }) {
           <div style={styles.teamSection(isMobile)}>
             <img src={awayLogo} alt={awayName} style={styles.teamLogo(isMobile)} />
             <div style={{ fontSize: isMobile ? "0.95rem" : "1.1rem", fontWeight: "700" }}>{awayAbbr}</div>
-            <div style={{ fontSize: isMobile ? "0.75rem" : "0.85rem", opacity: 0.6, fontWeight: "500" }}>{vars.awayOverallRecord}</div>
+            <div style={{ fontSize: isMobile ? "0.75rem" : "0.85rem", opacity: 0.6, fontWeight: "500" }}>{game.awayRecord}</div>
           </div>
 
           {/* Score */}
@@ -314,7 +306,7 @@ function MLBGameDetail({ game, onBack }) {
               letterSpacing: "0.05em",
             }}>
               {isPreGame && `${time}`}
-              {isInProgress && `${liveGame.inning}`}
+              {isInProgress && `${period}`}
               {isFinal && "Final"}
             </div>
           </div>
@@ -323,33 +315,15 @@ function MLBGameDetail({ game, onBack }) {
           <div style={styles.teamSection(isMobile)}>
             <img src={homeLogo} alt={homeName} style={styles.teamLogo(isMobile)} />
             <div style={{ fontSize: isMobile ? "0.95rem" : "1.1rem", fontWeight: "700" }}>{homeAbbr}</div>
-            <div style={{ fontSize: isMobile ? "0.75rem" : "0.85rem", opacity: 0.6, fontWeight: "500" }}>{vars.homeOverallRecord}</div>
           </div>
-        </div>
-
-        {/* Game Status Info */}
-        <div style={{
-          marginTop: "1.5rem",
-          paddingTop: "1.5rem",
-          borderTop: "1px solid #f0f0f0",
-          textAlign: "center",
-          fontSize: "0.9rem",
-          opacity: 0.7,
-        }}>
-          <div style={{ fontWeight: "500" }}>{vars.venue}</div>
-          {vars.temperature && (
-            <div style={{ marginTop: "0.25rem" }}>
-              {vars.futureWeather} • {vars.temperature}°F
-            </div>
-          )}
         </div>
       </div>
 
       {/* Live Game Situation */}
       {isInProgress && (
         <div style={{
-          ...styles.gradientBackground(["#f59e0b", "#d97706"]),
-          border: "1px solid rgba(245,158,11,0.3)",
+          ...styles.gradientBackground(["#3b82f6", "#2563eb"]),
+          border: "1px solid rgba(59,130,246,0.3)",
           color: "white",
         }}>
           {/* Live Badge */}
@@ -376,7 +350,7 @@ function MLBGameDetail({ game, onBack }) {
             Live
           </div>
 
-          {/* Diamond Visualization */}
+          {/* Rink Visualization */}
           <div style={{
             display: "flex",
             justifyContent: "center",
@@ -385,60 +359,24 @@ function MLBGameDetail({ game, onBack }) {
             gap: "3rem",
             flexWrap: "wrap",
           }}>
-            {/* Bases */}
-            <div style={styles.diamondContainer}>
-              <div style={{ ...styles.base(liveGame.vars?.onSecond), ...styles.baseSecond }} />
-              <div style={{ ...styles.base(liveGame.vars?.onThird), ...styles.baseThird }} />
-              <div style={{ ...styles.base(liveGame.vars?.onFirst), ...styles.baseFirst }} />
-              <div style={styles.homePlate} />
+            {/* Simple Rink */}
+            <div style={styles.rinkContainer}>
+              <div style={styles.centerLine} />
+              <div style={styles.puck} />
             </div>
 
-            {/* Count */}
+            {/* Period Info */}
             <div style={styles.count}>
-              <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "0.5rem", fontWeight: "600", letterSpacing: "0.1em" }}>COUNT</div>
-              <div style={styles.countNumber}>{vars.balls}-{vars.strikes}</div>
-              <div style={{ fontSize: "1rem", marginTop: "0.5rem", fontWeight: "600" }}>{vars.outs} Outs</div>
+              <div style={{ fontSize: "0.75rem", opacity: 0.8, marginBottom: "0.5rem", fontWeight: "600", letterSpacing: "0.1em" }}>PERIOD</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: "700" }}>{period}</div>
             </div>
           </div>
-
-          {/* Batter vs Pitcher */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr auto 1fr",
-            gap: "1rem",
-            alignItems: "center",
-            marginBottom: vars.lastPlay ? "1.5rem" : "0",
-          }}>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "0.75rem", opacity: 0.8, fontWeight: "600", letterSpacing: "0.05em" }}>BATTING</div>
-              <div style={{ fontSize: "1.05rem", fontWeight: "700", marginTop: "0.25rem" }}>{vars.currentBatter || "—"}</div>
-            </div>
-            <div style={{ fontSize: "1.2rem", opacity: 0.5, padding: "0 1rem", fontWeight: "700" }}>VS</div>
-            <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: "0.75rem", opacity: 0.8, fontWeight: "600", letterSpacing: "0.05em" }}>PITCHING</div>
-              <div style={{ fontSize: "1.05rem", fontWeight: "700", marginTop: "0.25rem" }}>{vars.currentPitcher || "—"}</div>
-            </div>
-          </div>
-
-          {/* Last Play */}
-          {vars.lastPlay && (
-            <div style={{
-              marginTop: "1.5rem",
-              paddingTop: "1.5rem",
-              borderTop: "1px solid rgba(255,255,255,0.2)",
-              fontSize: "0.9rem",
-              lineHeight: "1.6",
-              opacity: 0.9,
-            }}>
-              <strong>Last Play:</strong> {vars.lastPlay}
-            </div>
-          )}
         </div>
       )}
 
       {/* Tabs */}
       <div style={styles.tabContainer}>
-        {["overview", "matchup", "stats", "leaders"].map(tab => (
+        {["overview", "stats", "leaders"].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -457,97 +395,16 @@ function MLBGameDetail({ game, onBack }) {
             gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
             gap: "1rem",
           }}>
-            {/* Probable Pitchers */}
-            {vars.probableAwayStarter && vars.probableHomeStarter && (
-              <div style={styles.card}>
-                <div style={styles.cardTitle}>Probable Pitchers</div>
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: "0.95rem", fontWeight: "600" }}>{vars.probableAwayStarter}</div>
-                  <div style={{ fontSize: "0.85rem", opacity: 0.6, marginTop: "0.25rem" }}>{vars.probableAwayStarterStats}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: "600" }}>{vars.probableHomeStarter}</div>
-                  <div style={{ fontSize: "0.85rem", opacity: 0.6, marginTop: "0.25rem" }}>{vars.probableHomeStarterStats}</div>
-                </div>
+            {/* Game Info Card */}
+            <div style={styles.card}>
+              <div style={styles.cardTitle}>Game Information</div>
+              <div style={{ fontSize: "0.95rem", lineHeight: "1.6", opacity: 0.8 }}>
+                {awayName} vs {homeName}
               </div>
-            )}
-
-            {/* Betting Odds */}
-            {vars.homeOdds && (
-              <div style={styles.card}>
-                <div style={styles.cardTitle}>Betting Odds</div>
-                <div style={styles.statLine}>
-                  <span style={{ fontWeight: "500" }}>{awayAbbr}</span>
-                  <span style={styles.statValue}>{vars.awayOdds}</span>
-                </div>
-                <div style={styles.statLine}>
-                  <span style={{ fontWeight: "500" }}>{homeAbbr}</span>
-                  <span style={styles.statValue}>{vars.homeOdds}</span>
-                </div>
-                {vars.overUnder && (
-                  <div style={{ ...styles.statLine, marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid #f0f0f0" }}>
-                    <span style={{ fontWeight: "500" }}>O/U</span>
-                    <span style={styles.statValue}>{vars.overUnder}</span>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Game Summary */}
-            {vars.gameSummary && (
-              <div style={styles.card}>
-                <div style={styles.cardTitle}>Game Summary</div>
-                <div style={{ fontSize: "0.95rem", lineHeight: "1.6", opacity: 0.8 }}>{vars.gameSummary}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === "matchup" && isPreGame && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "1.5rem" }}>
-          {/* Away Starter */}
-          <div style={styles.card}>
-            <div style={styles.leaderHeader}>
-              <img src={awayLogo} alt={awayName} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
-              {awayName}
-            </div>
-            <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-              <div style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.75rem" }}>
-                {vars.probableAwayStarter}
-              </div>
-              <div style={{
-                display: "inline-block",
-                background: "#f0f0f0",
-                padding: "0.5rem 1.25rem",
-                borderRadius: "24px",
-                fontSize: "0.9rem",
-                fontWeight: "600",
-              }}>
-                {vars.probableAwayStarterStats}
-              </div>
-            </div>
-          </div>
-
-          {/* Home Starter */}
-          <div style={styles.card}>
-            <div style={styles.leaderHeader}>
-              <img src={homeLogo} alt={homeName} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
-              {homeName}
-            </div>
-            <div style={{ marginTop: "1.5rem", textAlign: "center" }}>
-              <div style={{ fontSize: "1.3rem", fontWeight: "700", marginBottom: "0.75rem" }}>
-                {vars.probableHomeStarter}
-              </div>
-              <div style={{
-                display: "inline-block",
-                background: "#f0f0f0",
-                padding: "0.5rem 1.25rem",
-                borderRadius: "24px",
-                fontSize: "0.9rem",
-                fontWeight: "600",
-              }}>
-                {vars.probableHomeStarterStats}
+              <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.6 }}>
+                {isPreGame && `Scheduled: ${time}`}
+                {isInProgress && `In Progress: ${period}`}
+                {isFinal && "Game Completed"}
               </div>
             </div>
           </div>
@@ -558,25 +415,19 @@ function MLBGameDetail({ game, onBack }) {
         <div style={styles.card}>
           <div style={{ ...styles.cardTitle, textAlign: "center" }}>Season Statistics</div>
           <div style={{ display: "grid", gap: "0.5rem" }}>
-            {[
-              { label: "Overall Record", away: vars.awayOverallRecord, home: vars.homeOverallRecord },
-              { label: "Home Record", away: vars.awayAwayRecord, home: vars.homeHomeRecord },
-              { label: "Away Record", away: vars.awayAwayRecord, home: vars.homeAwayRecord },
-            ].map((stat, idx) => (
-              <div key={idx} style={{
-                display: "grid",
-                gridTemplateColumns: "1fr auto 1fr",
-                gap: "1rem",
-                background: idx % 2 === 0 ? "#fafafa" : "transparent",
-                padding: "1rem",
-                borderRadius: "12px",
-                alignItems: "center",
-              }}>
-                <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{stat.away}</div>
-                <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>{stat.label}</div>
-                <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>{stat.home}</div>
-              </div>
-            ))}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr",
+              gap: "1rem",
+              background: "#fafafa",
+              padding: "1rem",
+              borderRadius: "12px",
+              alignItems: "center",
+            }}>
+              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{awayRecord}</div>
+              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Record</div>
+              <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>—</div>
+            </div>
           </div>
         </div>
       )}
@@ -608,4 +459,4 @@ function MLBGameDetail({ game, onBack }) {
   );
 }
 
-export default MLBGameDetail;
+export default NHLGameDetail;
