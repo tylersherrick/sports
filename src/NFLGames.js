@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-function NFLGames({ isExpanded, setExpanded }) {
+function NFLGames({ isExpanded, setExpanded, setSelectedGame }) {
   const [games, setGames] = useState([]);
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
@@ -186,6 +186,7 @@ function NFLGames({ isExpanded, setExpanded }) {
               className={`nfl-game-item ${
                 scoreChanges[game.gameId] ? "score-changed" : ""
               }`}
+              onClick={() => setSelectedGame({ league: "NFL", game })}
             >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">

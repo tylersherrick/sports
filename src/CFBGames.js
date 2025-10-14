@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
 
-function CFBGames({ isExpanded, setExpanded }) {
+function CFBGames({ isExpanded, setExpanded, setSelectedGame }) {
   const [games, setGames] = useState([]);
   const prevGamesRef = useRef([]);
   const [loading, setLoading] = useState(true);
@@ -181,6 +181,7 @@ function CFBGames({ isExpanded, setExpanded }) {
             <li
               key={game.gameId}
               className={`cfb-game-item ${scoreChanges[game.gameId] ? "score-changed" : ""}`}
+              onClick={() => setSelectedGame({ league: "CFB", game })}
             >
               <img src={game.awayLogo} alt={game.awayName} className="team-logo" />
               <span className="team-name">

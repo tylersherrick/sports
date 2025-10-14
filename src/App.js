@@ -5,7 +5,9 @@ import NFLGames from "./NFLGames";
 import CFBGames from "./CFBGames";
 import NBAGames from "./NBAGames";
 import MLBGameDetail from "./MLBGameDetail";
+import NFLGameDetail from "./NFLGameDetail";
 import NHLGameDetail from "./NHLGameDetail";
+import CFBGameDetail from "./CFBGameDetail";
 
 function Sports() {
   const [isExpanded, setExpanded] = useState(null);
@@ -28,6 +30,22 @@ function Sports() {
       />
     )
   }
+  if(selectedGame?.league === "NFL") {
+    return (
+      <NFLGameDetail
+        game={selectedGame.game}
+        onBack={() => setSelectedGame(null)}
+      />
+    )
+  }
+  if(selectedGame?.league === "CFB") {
+    return (
+      <CFBGameDetail
+        game={selectedGame.game}
+        onBack={() => setSelectedGame(null)}
+      />
+    )
+  }
 
   return (
     <div className="sports-container">
@@ -35,8 +53,8 @@ function Sports() {
 
       {/* Pass setSelectedGame to MLBGames */}
       <MLBGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
-      <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} />
-      <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} />
+      <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
+      <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
       <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame}/>
       <NBAGames isExpanded={isExpanded} setExpanded={setExpanded} />
     </div>
