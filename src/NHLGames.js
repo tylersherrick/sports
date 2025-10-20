@@ -95,6 +95,12 @@ function NHLGames({ isExpanded, setExpanded, setSelectedGame }) {
               homeLogo: homeTeam.logo,
               period: event.status.type.shortDetail,
               state,
+              awayRecord: event.competitions[0].competitors[1].records[0].summary,
+              homeRecord: event.competitions[0].competitors[0].records[0].summary,
+              homeHome: event.competitions[0].competitors[0].records[1].summary,
+              homeAway: event.competitions[0].competitors[0].records[2].summary,
+              awayHome: event.competitions[0].competitors[1].records[1].summary,
+              awayAway: event.competitions[0].competitors[1].records[2].summary,
             };
           }) || [];
 

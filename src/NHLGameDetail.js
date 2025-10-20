@@ -219,7 +219,7 @@ function NHLGameDetail({ game, onBack }) {
             venue: game.competitions[0].venue.fullName,
             spread: game.competitions[0].odds?.[0]?.details || "",
             awayOdds: game.competitions[0].odds?.[0]?.awayTeamOdds?.moneyLine || "",
-            homeOdds: game.competitions[0].odds?.[0]?.awayTeamOdds?.moneyLine || "",
+            homeOdds: game.competitions[0].odds?.[0]?.awayTeamOdds?.moneyLine || "",  
           };
           setLiveGame(updatedGame);
         }
@@ -243,12 +243,17 @@ function NHLGameDetail({ game, onBack }) {
     homeAbbr,
     period,
     awayRecord,
+    homeRecord,
+    homeHome,
+    homeAway,
+    awayHome,
+    awayAway,
   } = liveGame;
   const isPreGame = state === "pre";
   const isFinal = state === "post";
   const isInProgress = state === "in";
-
   const vars = liveGame.vars;
+  console.log();
 
   return (
     <div style={styles.container}>
@@ -315,6 +320,7 @@ function NHLGameDetail({ game, onBack }) {
           <div style={styles.teamSection(isMobile)}>
             <img src={homeLogo} alt={homeName} style={styles.teamLogo(isMobile)} />
             <div style={{ fontSize: isMobile ? "0.95rem" : "1.1rem", fontWeight: "700" }}>{homeAbbr}</div>
+            <div style={{ fontSize: isMobile ? "0.75rem" : "0.85rem", opacity: 0.6, fontWeight: "500" }}>{game.homeRecord}</div>
           </div>
         </div>
       </div>
@@ -399,7 +405,7 @@ function NHLGameDetail({ game, onBack }) {
             <div style={styles.card}>
               <div style={styles.cardTitle}>Game Information</div>
               <div style={{ fontSize: "0.95rem", lineHeight: "1.6", opacity: 0.8 }}>
-                {awayName} vs {homeName}
+                {awayName} at {homeName}
               </div>
               <div style={{ fontSize: "0.85rem", marginTop: "0.5rem", opacity: 0.6 }}>
                 {isPreGame && `Scheduled: ${time}`}
@@ -413,7 +419,31 @@ function NHLGameDetail({ game, onBack }) {
 
       {activeTab === "stats" && (
         <div style={styles.card}>
-          <div style={{ ...styles.cardTitle, textAlign: "center" }}>Season Statistics</div>
+          <div style={{ display: "grid", gap: "0.5rem" }}>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr",
+              gap: "1rem",
+              background: "#fafafa",
+              padding: "1rem",
+              borderRadius: "12px",
+              alignItems: "center",
+              marginBottom: "20px",
+            }}>
+              <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>{game.awayRecord}</div>
+              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Overall Record</div>
+              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{game.homeRecord}</div>
+
+              <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>{game.awayHome}</div>
+              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Home Record</div>
+              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{game.homeHome}</div>
+
+              <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>{game.awayAway}</div>
+              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Away Record</div>
+              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{game.homeAway}</div>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gap: "0.5rem" }}>
             <div style={{
               display: "grid",
@@ -424,9 +454,9 @@ function NHLGameDetail({ game, onBack }) {
               borderRadius: "12px",
               alignItems: "center",
             }}>
-              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>{awayRecord}</div>
-              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Record</div>
-              <div style={{ textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>—</div>
+              <div style={{textAlign: "left", fontWeight: "700", fontSize: "1rem" }}>*</div>
+              <div style={{ ...styles.statLabel, textAlign: "center", minWidth: "120px" }}>Placeholder for team stats</div>
+              <div style={{ textAlign: "right", fontWeight: "700", fontSize: "1rem" }}>*</div>
             </div>
           </div>
         </div>
@@ -437,20 +467,18 @@ function NHLGameDetail({ game, onBack }) {
           <div style={styles.card}>
             <div style={styles.leaderHeader}>
               <img src={awayLogo} alt={awayName} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
-              {awayName} Leaders
+              {awayName}
             </div>
             <div style={{ fontSize: "0.9rem", opacity: 0.6, lineHeight: "1.7" }}>
-              Team statistics and leaders will be available from the API's competitor.leaders array once properly mapped.
             </div>
           </div>
           
           <div style={styles.card}>
             <div style={styles.leaderHeader}>
               <img src={homeLogo} alt={homeName} style={{ width: "40px", height: "40px", borderRadius: "8px" }} />
-              {homeName} Leaders
+              {homeName}
             </div>
             <div style={{ fontSize: "0.9rem", opacity: 0.6, lineHeight: "1.7" }}>
-              Team statistics and leaders will be available from the API's competitor.leaders array once properly mapped.
             </div>
           </div>
         </div>
