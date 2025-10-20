@@ -12,7 +12,7 @@ function CFBGames({ isExpanded, setExpanded, setSelectedGame }) {
 
   // Season starts Aug 28, 2025
   function getCurrentCFBWeek() {
-    const SEASON_START = new Date("2025-08-26T00:00:00Z");
+    const SEASON_START = new Date("2025-08-25T00:00:00Z");
     const today = new Date();
     const diff = Math.floor((today - SEASON_START) / (7 * 24 * 60 * 60 * 1000));
     return Math.max(1, diff + 1);
@@ -29,7 +29,7 @@ function CFBGames({ isExpanded, setExpanded, setSelectedGame }) {
   }
 
   function getWeekRange(weekNumber) {
-    const SEASON_START = new Date("2025-08-26T00:00:00Z");
+    const SEASON_START = new Date("2025-08-25T00:00:00Z");
     const startDate = new Date(SEASON_START);
     startDate.setDate(startDate.getDate() + (weekNumber - 1) * 7);
     const endDate = new Date(startDate);
