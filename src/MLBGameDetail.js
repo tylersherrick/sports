@@ -184,6 +184,7 @@ const styles = {
     fontSize: "1.2rem",
     fontWeight: "bold",
     marginBottom: "1rem",
+    marginLeft: "14%"
   },
 };
 
