@@ -22,30 +22,30 @@ function Sports() {
       />
     );
   }
-  if(selectedGame?.league === "NHL") {
-    return (
-      <NHLGameDetail
-        game={selectedGame.game}
-        onBack={() => setSelectedGame(null)}
-      />
-    )
-  }
-  if(selectedGame?.league === "NFL") {
-    return (
-      <NFLGameDetail
-        game={selectedGame.game}
-        onBack={() => setSelectedGame(null)}
-      />
-    )
-  }
-  if(selectedGame?.league === "CFB") {
-    return (
-      <CFBGameDetail
-        game={selectedGame.game}
-        onBack={() => setSelectedGame(null)}
-      />
-    )
-  }
+  // if(selectedGame?.league === "NHL") {
+  //   return (
+  //     <NHLGameDetail
+  //       game={selectedGame.game}
+  //       onBack={() => setSelectedGame(null)}
+  //     />
+  //   )
+  // }
+  // if(selectedGame?.league === "NFL") {
+  //   return (
+  //     <NFLGameDetail
+  //       game={selectedGame.game}
+  //       onBack={() => setSelectedGame(null)}
+  //     />
+  //   )
+  // }
+  // if(selectedGame?.league === "CFB") {
+  //   return (
+  //     <CFBGameDetail
+  //       game={selectedGame.game}
+  //       onBack={() => setSelectedGame(null)}
+  //     />
+  //   )
+  // }
 
   return (
     <div className="sports-container">
