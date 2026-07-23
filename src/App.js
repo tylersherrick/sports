@@ -1,62 +1,59 @@
 import { useState } from "react";
 import MLBGames from "./MLBGames";
-import NHLGames from "./NHLGames";
-import NFLGames from "./NFLGames";
-import CFBGames from "./CFBGames";
-import NBAGames from "./NBAGames";
+// import NHLGames from "./NHLGames";
+// import NFLGames from "./NFLGames";
+// import CFBGames from "./CFBGames";
+// import NBAGames from "./NBAGames";
 import MLBGameDetail from "./MLBGameDetail";
-import NFLGameDetail from "./NFLGameDetail";
-import NHLGameDetail from "./NHLGameDetail";
-import CFBGameDetail from "./CFBGameDetail";
+// import NFLGameDetail from "./NFLGameDetail";
+// import NHLGameDetail from "./NHLGameDetail";
+// import CFBGameDetail from "./CFBGameDetail";
 
 function Sports() {
-  const [isExpanded, setExpanded] = useState(null);
-  const [selectedGame, setSelectedGame] = useState(null); // track the clicked game
+  const [isExpanded, setExpanded] = useState("MLB");
+  const [selectedGame, setSelectedGame] = useState(null);
 
-  // If a game is selected, only show the detail view
   if (selectedGame?.league === "MLB") {
     return (
       <MLBGameDetail
         game={selectedGame.game}
-        onBack={() => setSelectedGame(null)} // back resets selection
+        onBack={() => setSelectedGame(null)}
       />
     );
   }
-  // if(selectedGame?.league === "NHL") {
-  //   return (
-  //     <NHLGameDetail
-  //       game={selectedGame.game}
-  //       onBack={() => setSelectedGame(null)}
-  //     />
-  //   )
-  // }
-  // if(selectedGame?.league === "NFL") {
-  //   return (
-  //     <NFLGameDetail
-  //       game={selectedGame.game}
-  //       onBack={() => setSelectedGame(null)}
-  //     />
-  //   )
-  // }
-  // if(selectedGame?.league === "CFB") {
-  //   return (
-  //     <CFBGameDetail
-  //       game={selectedGame.game}
-  //       onBack={() => setSelectedGame(null)}
-  //     />
-  //   )
-  // }
 
   return (
     <div className="sports-container">
-      {!isExpanded && <p className="default-text">Today's Sporting Events</p>}
+      <MLBGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+        setSelectedGame={setSelectedGame}
+      />
 
-      {/* Pass setSelectedGame to MLBGames */}
-      <MLBGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
-      <CFBGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
-      <NFLGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame} />
-      <NHLGames isExpanded={isExpanded} setExpanded={setExpanded} setSelectedGame={setSelectedGame}/>
-      <NBAGames isExpanded={isExpanded} setExpanded={setExpanded} />
+      {/* Other sports temporarily disabled */}
+
+      {/* <CFBGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+        setSelectedGame={setSelectedGame}
+      />
+
+      <NFLGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+        setSelectedGame={setSelectedGame}
+      />
+
+      <NHLGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+        setSelectedGame={setSelectedGame}
+      />
+
+      <NBAGames
+        isExpanded={isExpanded}
+        setExpanded={setExpanded}
+      /> */}
     </div>
   );
 }
